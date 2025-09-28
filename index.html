@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HOPE - Interactive Educational Dashboard</title>
+  <style>
+    :root {
+      --accent: #715aff;
+      --accent-light: #eceaff;
+      --success: #21de98;
+      --danger: #fd5757;
+      --bg: #f9fbfd;
+      --text: #272629;
+      --sidebar-bg: #352e83;
+      --radius: 18px;
+      --shadow: 0 4px 32px rgba(72,52,212,0.07);
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; height: 100%; width: 100%;
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-y: auto;
+    }
+    button { cursor: pointer; font-family: inherit; }
+    /* Authentication Screen */
+    #authScreen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, var(--accent), var(--success));
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 1000;
+    }
+    #authScreen h1 {
+      font-size: 3rem;
+      margin-bottom: 2rem;
+      user-select: none;
+    }
+    .auth-tabs {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+    .auth-tabs button {
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: white;
+      font-size: 1.8rem;
+      font-weight: 700;
+      padding: 0.3rem 0;
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.3s ease;
+    }
+    .auth-tabs button.active {
+      border-color: var(--success);
+    }
+    form {
+      background: rgba(255 255 255 / 0.15);
+      padding: 2.5rem 3rem;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.3rem;
+    }
+    input {
+      padding: 1rem 1.2rem;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      border: none;
+      outline: none;
+    }
+    button[type="submit"] {
+      background: white;
+      border: none;
+      padding: 1rem;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    button[type="submit"]:hover,
+    button[type="submit"]:focus {
+      background: var(--success);
+      color: #23233b;
+      outline: none;
+    }
+    .form-message {
+      min-height: 1.2em;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--danger);
+    }
+    .below-text {
+      margin-top: 1rem;
+      font-size: 1rem;
+      user-select: none;
+      text-align: center;
+    }
+    .below-text span {
+      color: white;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    /* Dashboard */
+    #app {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: none;
+      font-size: 1.05rem;
+    }
+    .sidebar {
+      position: fixed;
+      top: 0; bottom: 0;
+      left: 0;
+      width: 230px;
+      background: var(--sidebar-bg);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+    }
+    .sidebar .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 1.5rem 20px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      user-select: none;
+    }
+    .sidebar .logo span {
+      font-size: 2.4rem;
+      color: var(--accent);
+    }
+    nav ul {
+      margin-top: 2rem;
+      padding-left: 20px;
+      list-style: none;
+      flex-grow: 1;
+    }
+    nav ul li {
+      cursor: pointer;
+      padding: 1rem 15px;
+      font-size: 1.15rem;
+      display: flex;
+      gap: 0.7rem;
+      align-items: center;
+      border-left: 4px solid transparent;
+      opacity: 0.75;
+      user-select: none;
+      transition: all 0.25s ease;
+    }
+    nav ul li.active,
+    nav ul li:hover {
+      opacity: 1;
+      font-weight: 600;
+      border-left-color: var(--accent);
+      background: rgba(255 255 255 / 0.05);
+    }
+    .sidebar-footer {
+      padding: 1rem 20px;
+      border-top: 1px solid rgba(255 255 255 / 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .sidebar-footer button {
+      border-radius: 15px;
+      padding: 10px 15px;
+      border: none;
+      font-weight: 700;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+    .sidebar-footer button:first-child {
+      background: var(--accent);
+      color: white;
+      transition: background 0.3s ease;
+    }
+    .sidebar-footer button:first-child:hover,
+    .sidebar-footer button:first-child:focus {
+      background: var(--success);
+      outline: none;
+    }
+    .sidebar-footer button:last-child {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .sidebar-footer button:last-child:hover,
+    .sidebar-footer button:last-child:focus {
+      background: var(--success);
+      outline: none;
+    }
+    main {
+      position: absolute;
+      top: 0;
+      left: 230px;
+      right: 0;
+      bottom: 0;
+      padding: 2rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    main > header {
+      width: 100%;
+      max-width: 650px;
+      font-size: 1.85rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 1.5rem;
+      color: var(--sidebar-bg);
+      user-select: none;
+    }
+    section.tab-content {
+      width: 100%;
+      max-width: 650px;
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 2rem 2rem 1.5rem;
+      margin-bottom: 2rem;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      animation: fadeIn 0.35s ease forwards;
+    }
+    section.tab-content.active {
+      display: flex;
+    }
+    .icon {
+      font-size: 1.4rem;
+      vertical-align: middle;
+    }
+    ol, ul {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+    }
+    ol li, ul li {
+      font-size: 1rem;
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid #eee;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+    }
+    ol li:last-child, ul li:last-child {
+      border-bottom: none;
+    }
+    .points {
+      font-weight: 700;
+      color: var(--accent);
+    }
+    textarea, input {
+      width: 100%;
+      font-size: 1.1rem;
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      font-family: inherit;
+      margin-bottom: 1.3rem;
+      resize: vertical;
+    }
+    .main-action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 1rem 2.5rem;
+      border-radius: 30px;
+      font-weight: 700;
+      font-size: 1.15rem;
+      border: none;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(90deg, var(--accent) 60%, var(--accent-light) 100%);
+      box-shadow: 0 4px 24px rgba(113,90,255,0.5);
+      justify-content: center;
+      transition: background 0.3s ease, transform 0.25s ease;
+    }
+    .main-action-btn:hover,
+    .main-action-btn:focus {
+      background: linear-gradient(85deg, var(--success) 78%, var(--accent) 100%);
+      transform: translateY(-3px) scale(1.05);
+      outline: none;
+    }
+    button.quiz-button {
+      width: 100%;
+      border-radius: 20px;
+      padding: 0.85rem 1.3rem;
+      margin-bottom: 0.7rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: 2px solid var(--accent);
+      background: white;
+      cursor: pointer;
+      transition: background-color 0.25s ease;
+      text-align: left;
+    }
+    button.quiz-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+    button.quiz-button:hover:enabled,
+    button.quiz-button:focus:enabled {
+      background-color: var(--accent-light);
+      outline: none;
+    }
+    .quiz-feedback {
+      font-weight: 700;
+      margin-top: 1.1rem;
+      text-align: center;
+    }
+    .quiz-feedback.correct {
+      color: var(--success);
+    }
+    .quiz-feedback.incorrect {
+      color: var(--danger);
+    }
+    @keyframes fadeIn {
+      0% {opacity: 0; transform: translateY(20px);}
+      100% {opacity: 1; transform: translateY(0);}
+    }
+    @media (max-width: 900px) {
+      main {
+        padding: 1rem;
+      }
+      .sidebar {
+        position: sticky;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: auto;
+        flex-direction: row;
+        justify-content: space-around;
+        z-index: 20;
+      }
+      main {
+        left: 0;
+        margin-top: 56px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Authentication -->
+<div id="authScreen" role="main" aria-label="Authentication Screen">
+  <h1>HOPE</h1>
+  <div class="auth-tabs" role="tablist" aria-label="Authentication Tabs">
+    <button id="tabLogin" class="active" aria-selected="true" aria-controls="loginForm" tabindex="0">Login</button>
+    <button id="tabSignUp" aria-selected="false" aria-controls="signupForm" tabindex="0">Sign Up</button>
+  </div>
+  <form id="loginForm" role="tabpanel" aria-labelledby="tabLogin" autocomplete="off" aria-hidden="false">
+    <input id="loginUsername" type="text" placeholder="Username" required autocomplete="off" />
+    <input id="loginPassword" type="password" placeholder="Password" required autocomplete="off" />
+    <button type="submit"><span class="icon">🔓</span> Login</button>
+    <div id="loginMsg" class="form-message"></div>
+    <div class="below-text" id="loginBelowText">New here? <span id="goToSignUp" tabindex="0">Create an account</span></div>
+  </form>
+  <form id="signupForm" role="tabpanel" aria-labelledby="tabSignUp" autocomplete="off" aria-hidden="true" style="display:none;">
+    <input id="signupUsername" type="text" placeholder="Create username" required autocomplete="off" />
+    <input id="signupPassword" type="password" placeholder="Create password" required autocomplete="off" />
+    <button type="submit"><span class="icon">🆕</span> Sign Up</button>
+    <div id="signupMsg" class="form-message"></div>
+  </form>
+</div>
+
+<!-- Dashboard -->
+<div id="app" role="main" aria-label="Dashboard" style="display:none;">
+  <aside class="sidebar" role="navigation" aria-label="Primary Navigation">
+    <div class="logo"><span>🌟</span><h2>HOPE</h2></div>
+    <nav>
+      <ul id="navList" role="tablist" aria-label="Dashboard Navigation">
+        <li data-tab="home" role="tab" tabindex="0" aria-selected="true" class="active"><span class="icon">🏅</span>Home</li>
+        <li data-tab="members" role="tab" tabindex="0" aria-selected="false"><span class="icon">👥</span>Members</li>
+        <li data-tab="quiz" role="tab" tabindex="0" aria-selected="false"><span class="icon">📝</span>Quiz</li>
+        <li data-tab="summarize" role="tab" tabindex="0" aria-selected="false"><span class="icon">🧠</span>Summarize</li>
+        <li data-tab="studyPlan" role="tab" tabindex="0" aria-selected="false"><span class="icon">📆</span>Study Plan</li>
+        <li data-tab="studyPath" role="tab" tabindex="0" aria-selected="false"><span class="icon">🛤</span>Study Path</li>
+        <li data-tab="remediation" role="tab" tabindex="0" aria-selected="false"><span class="icon">🩺</span>Remediation</li>
+        <li data-tab="chatbot" role="tab" tabindex="0" aria-selected="false"><span class="icon">💬</span>Chatbot</li>
+        <li data-tab="about" role="tab" tabindex="0" aria-selected="false"><span class="icon">ℹ️</span>About</li>
+        <li data-tab="profile" role="tab" tabindex="0" aria-selected="false"><span class="icon">👤</span>Profile</li>
+      </ul>
+    </nav>
+    <div class="sidebar-footer">
+      <button id="logoutBtn"><span class="icon">⏏</span>Logout</button>
+      <button id="aboutBtn" class="sidebar-btn" aria-label="About"><span class="icon">ℹ️</span> About</button>
+    </div>
+  </aside>
+  <main>
+    <header><span id="welcomeText"><span class="icon">👋</span>Welcome</span></header>
+
+    <section id="homeTab" class="tab-content active" role="tabpanel" aria-hidden="false">
+      <h2><span class="icon">🏅</span> Leaderboard</h2>
+      <ol id="leaderboardList">Loading...</ol>
+    </section>
+
+    <section id="membersTab" class="tab-content" role="tabpanel" aria-hidden="true">
+      <h2><span class="icon">👥</span> Members</h2>
+      <ul id="membersList">Loading...</ul>
+    </section>
+
+    <section id="quizTab" class="tab-content" role="tabpanel" aria-hidden="true">
+      <h2><span class="icon">📝</span> Quiz</h2>
+      <textarea id="quizNotes" placeholder="Paste your notes here"></textarea>
+      <button id="quizBtn" class="main-action-btn"><span class="icon">📝</span>Generate</button>
+      <div id="quizResult"></div>
+    </section>
+
+    <section id="summarizeTab" class="tab-content" role="tabpanel" aria-hidden="true">
+      <h2><span class="icon">🧠</span> Summarize</h2>
+      <textarea id="summarizeNotes" placeholder="Paste your notes here"></textarea>
+      <button id="summarizeBtn" class="main-action-btn"><span class="icon">🧠</span>Summarize</button>
+      <div id="summarizeResult"></div>
+    </section>
+
+    <section id="studyPlanTab" class="tab-content" role="tabpanel" aria-hidden="true">
+      <h2><span class="icon">📆</span> Study Plan</h2>
+      <textarea id="studyPlanInput" placeholder="Paste topics here"></textarea>
+      <button id="studyPlanBtn" class="main-action-btn"><span class="icon">📆</span>Get Plan</button>
+      <div id="studyPlanResult"></div>
+    </section>
+
+    <section id="studyPathTab" class="tab-content" role="tabpanel" aria-hidden="true">
+      <h2><span class="icon">🛤</span> Study Path</h2>
+      <textarea id="studyPathInput" placeholder="Paste topics here"></textarea>
+      <button id="studyPathBtn" class="main-action-btn"><span class="icon">🛤</span>Optimize</button>
+      <div id="studyPathResult"></div>
+    </section>
+
+    <section id="remediationTab" class="tab-content" role="tabpanel" aria-hidden="true">
+      <h2><span class="icon">🩺</span> Remediation</h2>
+      <button id="remediationBtn" class="main-action-btn"><span class="icon">🩺</span>Analyze</button>
+      <div id="remediationResult"></div>
+    </section>
+
+    <section id="chatbotTab" class="tab-content" role="tabpanel" aria-hidden="true">
+      <h2><span class="icon">💬</span> AI Chatbot</h2>
+      <div id="chatHistory" style="height:180px; overflow-y:auto; background:#eceaff; border-radius:12px; margin-bottom:1rem; padding:0.7rem;"></div>
+      <input id="chatInput" placeholder="Ask the AI anything..." autocomplete="off" style="width: 100%; padding: 0.8rem; font-size:1rem; border-radius:8px; border:1px solid #ccc;" />
+      <button id="chatSendBtn" style="margin-top:0.75rem; padding: 0.8rem 1.5rem; border:none; border-radius: 20px; background: var(--accent); color: white; font-weight: 700; cursor:pointer;">Send</button>
+    </section>
+
+    <section id="aboutTab" class="tab-content" role="tabpanel" aria-hidden="true">
+      <h2><span class="icon">ℹ️</span> About HOPE</h2>
+      <p style="max-width: 600px; text-align: center;">
+        HOPE is an interactive educational dashboard designed to help students learn smarter.
+        It integrates quiz generation, summarization, personalized study plans, and remediation using AI-driven features.
+        This platform aims to make studying efficient, fun, and personalized.
+        <br><br>
+        Developed to empower learners to make the most of their study time with AI assistance and real-time progress tracking.
+      </p>
+    </section>
+
+    <section id="profileTab" class="tab-content" role="tabpanel" aria-hidden="true">
+      <h2><span class="icon">👤</span> Profile</h2>
+      <p>Profile editing coming soon.</p>
+    </section>
+  </main>
+</div>
+
+<script>
+(() => {
+  const tabLogin = document.getElementById('tabLogin');
+  const tabSignUp = document.getElementById('tabSignUp');
+  const loginForm = document.getElementById('loginForm');
+  const signupForm = document.getElementById('signupForm');
+  const loginMsg = document.getElementById('loginMsg');
+  const signupMsg = document.getElementById('signupMsg');
+  const authScreen = document.getElementById('authScreen');
+  const app = document.getElementById('app');
+  const welcomeText = document.getElementById('welcomeText');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const navItems = document.querySelectorAll('#navList li');
+  const tabContents = document.querySelectorAll('.tab-content');
+  const leaderboardList = document.getElementById('leaderboardList');
+  const membersList = document.getElementById('membersList');
+  const quizNotes = document.getElementById('quizNotes');
+  const quizBtn = document.getElementById('quizBtn');
+  const quizResult = document.getElementById('quizResult');
+  const summarizeNotes = document.getElementById('summarizeNotes');
+  const summarizeBtn = document.getElementById('summarizeBtn');
+  const summarizeResult = document.getElementById('summarizeResult');
+  const studyPlanInput = document.getElementById('studyPlanInput');
+  const studyPlanBtn = document.getElementById('studyPlanBtn');
+  const studyPlanResult = document.getElementById('studyPlanResult');
+  const studyPathInput = document.getElementById('studyPathInput');
+  const studyPathBtn = document.getElementById('studyPathBtn');
+  const studyPathResult = document.getElementById('studyPathResult');
+  const remediationBtn = document.getElementById('remediationBtn');
+  const remediationResult = document.getElementById('remediationResult');
+  const chatHistory = document.getElementById('chatHistory');
+  const chatInput = document.getElementById('chatInput');
+  const chatSendBtn = document.getElementById('chatSendBtn');
+  const goToSignUp = document.getElementById('goToSignUp');
+  const loginBelowText = document.getElementById('loginBelowText');
+  const aboutBtn = document.getElementById('aboutBtn');
+
+  let userName = null;
+  let quizAnswers = [];
+
+  // Show Login tab
+  function showLogin() {
+    tabLogin.classList.add('active');
+    tabSignUp.classList.remove('active');
+    loginForm.style.display = 'flex';
+    signupForm.style.display = 'none';
+    loginMsg.textContent = '';
+    signupMsg.textContent = '';
+    loginBelowText.style.display = 'block';
+    authScreen.style.display = 'flex';
+    app.style.display = 'none';
+  }
+  // Show SignUp tab
+  function showSignUp() {
+    tabLogin.classList.remove('active');
+    tabSignUp.classList.add('active');
+    loginForm.style.display = 'none';
+    signupForm.style.display = 'flex';
+    loginMsg.textContent = '';
+    signupMsg.textContent = '';
+    loginBelowText.style.display = 'none';
+  }
+  tabLogin.addEventListener('click', e => { e.preventDefault(); showLogin(); });
+  tabSignUp.addEventListener('click', e => { e.preventDefault(); showSignUp(); });
+  goToSignUp.addEventListener('click', e => { e.preventDefault(); showSignUp(); });
+
+  loginForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    loginMsg.textContent = '';
+    const username = loginForm.loginUsername.value.trim();
+    const password = loginForm.loginPassword.value;
+    if (username.length < 3) { loginMsg.textContent = 'Enter valid username (min 3 chars)'; return; }
+    if (password.length < 4) { loginMsg.textContent = 'Enter valid password (min 4 chars)'; return; }
+    loginMsg.textContent = 'Logging in...';
+    try {
+      const res = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Login failed');
+      }
+      const data = await res.json();
+      if (data.success) {
+        userName = data.name;
+        welcomeText.textContent = `👋 Welcome, ${userName}`;
+        authScreen.style.display = 'none';
+        app.style.display = 'flex';
+        activateTab('home');
+        await loadLeaderboard();
+        await loadMembers();
+      } else {
+        loginMsg.textContent = data.error || 'Login failed';
+      }
+    } catch (err) {
+      loginMsg.textContent = err.message || 'Server error';
+    }
+  });
+
+  signupForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    signupMsg.textContent = '';
+    const username = signupForm.signupUsername.value.trim();
+    const password = signupForm.signupPassword.value;
+    if (username.length < 3) { signupMsg.textContent = 'Username must be at least 3 chars'; return; }
+    if (password.length < 4) { signupMsg.textContent = 'Password must be at least 4 chars'; return; }
+    try {
+      const res = await fetch('http://localhost:5000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Signup failed');
+      }
+      const data = await res.json();
+      if (data.success) {
+        signupMsg.textContent = 'Signup successful! Please login.';
+        signupForm.reset();
+        showLogin();
+      } else {
+        signupMsg.textContent = data.error || 'Signup failed';
+      }
+    } catch (err) {
+      signupMsg.textContent = err.message || 'Server error';
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to logout?')) {
+      userName = null;
+      quizAnswers = [];
+      authScreen.style.display = 'flex';
+      app.style.display = 'none';
+      loginForm.reset();
+      signupForm.reset();
+      welcomeText.textContent = '👋 Welcome';
+    }
+  });
+
+  aboutBtn.addEventListener('click', () => {
+    activateTab('about');
+  });
+
+  navItems.forEach(item => item.addEventListener('click', () => activateTab(item.dataset.tab)));
+
+  function activateTab(tab) {
+    navItems.forEach(item => {
+      const active = item.dataset.tab === tab;
+      item.classList.toggle('active', active);
+      item.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    tabContents.forEach(section => {
+      const active = section.id === tab + 'Tab';
+      section.classList.toggle('active', active);
+      section.setAttribute('aria-hidden', !active);
+      if (active) {
+        if (tab === 'home') loadLeaderboard();
+        if (tab === 'members') loadMembers();
+      }
+    });
+  }
+
+  async function loadLeaderboard() {
+    try {
+      const res = await fetch('http://localhost:5000/api/leaderboard');
+      if (!res.ok) throw new Error('Leaderboard fetch failed');
+      const data = await res.json();
+      leaderboardList.innerHTML = '';
+      if (!data.length) {
+        leaderboardList.textContent = 'No data yet.';
+        return;
+      }
+      data.forEach((user, idx) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>#${idx + 1}</strong> ${user.name} <span class="points">${user.points}</span>`;
+        leaderboardList.appendChild(li);
+      });
+    } catch {
+      leaderboardList.textContent = 'Error loading leaderboard.';
+    }
+  }
+
+  async function loadMembers() {
+    try {
+      const res = await fetch('http://localhost:5000/api/leaderboard');
+      if (!res.ok) throw new Error('Members fetch failed');
+      const data = await res.json();
+      membersList.innerHTML = '';
+      if (!data.length) {
+        membersList.textContent = 'No members.';
+        return;
+      }
+      data.forEach(user => {
+        const li = document.createElement('li');
+        li.textContent = user.name;
+        membersList.appendChild(li);
+      });
+    } catch {
+      membersList.textContent = 'Error loading members.';
+    }
+  }
+
+  summarizeBtn.addEventListener('click', () => {
+    const val = summarizeNotes.value.trim();
+    summarizeResult.textContent = '';
+    if (!val) {
+      summarizeResult.textContent = 'Please enter notes.';
+      return;
+    }
+    summarizeResult.textContent = 'Summarizing...';
+    fetch('http://localhost:5000/api/summarize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: val })
+    }).then(res => res.json())
+      .then(data => {
+        summarizeResult.textContent = data.success ? data.summary : (data.error || 'Failed.');
+      }).catch(() => {
+        summarizeResult.textContent = 'Server error.';
+      });
+  });
+
+  quizBtn.addEventListener('click', () => {
+    const val = quizNotes.value.trim();
+    quizResult.textContent = '';
+    if (!val) {
+      quizResult.textContent = 'Please enter notes.';
+      return;
+    }
+    fetch('http://localhost:5000/api/quiz', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: val, username: userName })
+    }).then(res => res.json())
+      .then(data => {
+        if (!data.success) {
+          quizResult.textContent = data.error || 'Quiz generation failed';
+          return;
+        }
+        quizAnswers = [];
+        startQuiz(data.quiz);
+      }).catch(() => {
+        quizResult.textContent = 'Server error.';
+      });
+  });
+
+  function startQuiz(questions) {
+    let idx = 0;
+    let score = 0;
+    quizAnswers = [];
+    function show() {
+      quizResult.innerHTML = '';
+      if (idx >= questions.length) {
+        quizResult.innerHTML = `<b>Quiz complete! Score: ${score} / ${questions.length}</b>`;
+        sendQuizResults();
+        updateLeaderboard(score);
+        return;
+      }
+      const q = questions[idx];
+      quizResult.innerHTML = `<b>Q${idx + 1}:</b> ${q.question}<br><br>`;
+      q.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'quiz-button';
+        btn.textContent = opt;
+        btn.onclick = () => {
+          quizResult.querySelectorAll('button').forEach(b => b.disabled = true);
+          const correct = opt === q.answer;
+          if (correct) score++;
+          quizAnswers.push({ question: q.question, selected: opt, correct, answer: q.answer, topic: q.topic || 'General' });
+          const fb = document.createElement('div');
+          fb.className = 'quiz-feedback ' + (correct ? 'correct' : 'incorrect');
+          fb.textContent = correct ? 'Correct!' : `Wrong! Answer: ${q.answer}`;
+          quizResult.appendChild(fb);
+          setTimeout(() => {
+            idx++;
+            show();
+          }, 1500);
+        };
+        quizResult.appendChild(btn);
+        quizResult.appendChild(document.createElement('br'));
+      });
+    }
+    show();
+  }
+
+  async function sendQuizResults() {
+    if (!userName || quizAnswers.length === 0) return;
+    try {
+      const res = await fetch('http://localhost:5000/api/quiz/results', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: userName, results: quizAnswers })
+      });
+      if (!res.ok) console.error('Failed to send quiz results.');
+      quizAnswers = [];
+    } catch (e) {
+      console.warn('Error sending quiz results:', e);
+    }
+  }
+
+  async function updateLeaderboard(points) {
+    if (!userName) return;
+    try {
+      const res = await fetch('http://localhost:5000/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: userName, points })
+      });
+      if (!res.ok) console.error('Failed to update leaderboard.');
+      await loadLeaderboard();
+    } catch (e) {
+      console.error('Error updating leaderboard:', e);
+    }
+  }
+
+  studyPlanBtn.addEventListener('click', () => {
+    const val = studyPlanInput.value.trim();
+    studyPlanResult.textContent = '';
+    if (!val) {
+      studyPlanResult.textContent = 'Please enter topics.';
+      return;
+    }
+    studyPlanResult.textContent = 'Generating study plan...';
+    fetch('http://localhost:5000/api/studyplan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: val })
+    }).then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          let html = '<ol style="text-align:left;">';
+          data.plan.forEach(item => {
+            html += `<li><b>${item.topic}</b> — ${item.minutes} min</li>`;
+          });
+          html += '</ol>';
+          studyPlanResult.innerHTML = html;
+        } else {
+          studyPlanResult.textContent = data.error || 'Failed to generate plan.';
+        }
+      }).catch(() => {
+        studyPlanResult.textContent = 'Server error.';
+      });
+  });
+
+  studyPathBtn.addEventListener('click', () => {
+    const val = studyPathInput.value.trim();
+    studyPathResult.textContent = '';
+    if (!val) {
+      studyPathResult.textContent = 'Please enter topics.';
+      return;
+    }
+    studyPathResult.textContent = 'Optimizing study path...';
+    fetch('http://localhost:5000/api/studypath', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notes: val })
+    }).then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          let html = '<ol style="text-align:left;">';
+          data.path.forEach(item => {
+            html += `<li><b>${item.topic}</b> — ${item.minutes} min</li>`;
+          });
+          html += '</ol>';
+          studyPathResult.innerHTML = html;
+        } else {
+          studyPathResult.textContent = data.error || 'Failed to optimize path.';
+        }
+      }).catch(() => {
+        studyPathResult.textContent = 'Server error.';
+      });
+  });
+
+  remediationBtn.addEventListener('click', () => {
+    remediationResult.textContent = '';
+    if (!userName) {
+      remediationResult.textContent = 'Please login first.';
+      return;
+    }
+    remediationResult.textContent = 'Analyzing...';
+    fetch('http://localhost:5000/api/remediation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: userName })
+    }).then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          if (!data.remediation.length) {
+            remediationResult.textContent = 'No weaknesses detected. Great job!';
+            return;
+          }
+          let html = '<ul style="text-align:left;">';
+          data.remediation.forEach(item => {
+            html += `<li><b>${item.topic}</b> — missed ${item.misses} times<br /><i>${item.suggestion}</i></li>`;
+          });
+          html += '</ul>';
+          remediationResult.innerHTML = html;
+        } else {
+          remediationResult.textContent = data.error || 'No remediation data available.';
+        }
+      }).catch(() => {
+        remediationResult.textContent = 'Server error.';
+      });
+  });
+
+  // AI Chatbot handlers
+  chatSendBtn.addEventListener('click', async () => {
+    const message = chatInput.value.trim();
+    if (!message) return;
+    chatHistory.innerHTML += `<div><b>You:</b> ${message}</div>`;
+    chatInput.value = '';
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+    chatSendBtn.disabled = true;
+    try {
+      const res = await fetch('http://localhost:5000/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      const data = await res.json();
+      if (data.success) {
+        chatHistory.innerHTML += `<div><b>AI:</b> ${data.reply}</div>`;
+      } else {
+        chatHistory.innerHTML += `<div style="color:red;"><b>AI Error:</b> ${data.error}</div>`;
+      }
+    } catch {
+      chatHistory.innerHTML += `<div style="color:red;"><b>Network error.</b></div>`;
+    }
+    chatSendBtn.disabled = false;
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+  });
+
+  // Initialize app with login
+  showLogin();
+})();
+</script>
+
+</body>
+</html>
